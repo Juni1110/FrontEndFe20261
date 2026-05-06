@@ -37,13 +37,19 @@ export function TransactionsTable() {
     }).format(amount)
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-MX', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
+const formatDate = (dateString: string) => {
+  // Creamos la fecha a partir del string
+  const date = new Date(dateString);
+  
+  // Usamos Intl.DateTimeFormat pero forzamos la zona horaria a UTC
+  // para que no reste horas locales.
+  return new Intl.DateTimeFormat('es-MX', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC' // <--- ESTA ES LA CLAVE
+  }).format(date);
+}
 
   const sortedTransactions = [...transactions].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
