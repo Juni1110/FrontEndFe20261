@@ -1,7 +1,11 @@
 "use client"
 
-import { useState } from 'react'
-import { useTransactions } from '@/contexts/transactions-context'
+import { useEffect, useState } from 'react'
+
+import {
+  getTransactions,
+  deleteTransaction as deleteTransactionApi
+} from '@/lib/api/transactions'
 import { TransactionForm } from './transaction-form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,7 +30,7 @@ import { TrendingUp, TrendingDown, Pencil, Trash2, Receipt, AlertTriangle } from
 import { getCategoryLabel, type Transaction } from '@/types'
 
 export function TransactionsTable() {
-  const { transactions, totalIncome, totalExpenses, balance, deleteTransaction } = useTransactions()
+const [transactions, setTransactions] = useState<Transaction[]>([])
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null)
 
@@ -36,7 +40,57 @@ export function TransactionsTable() {
       currency: 'MXN',
     }).format(amount)
   }
+useEffect(() => {
+  loadTransactions()
+}, [])
 
+const loadTransactions = async () => {
+
+  try {
+
+    const data = await getTransactions()
+
+    const mappedTransactions = data.map((t: any) => ({
+
+      id: t.transactionId,
+
+      amount: t.monto,
+
+type:
+  t.tipo === 'INGRESO'
+    ? 'income'
+    : 'expense',
+
+      category:
+        t.nombreCategoria || 'Sin categoria',
+
+      description:
+        t.descripcion || '',
+
+      date: t.fecha,
+
+      title: t.nombre,
+
+    }))
+
+    setTransactions(mappedTransactions)
+
+  } catch (error) {
+
+    console.error(error)
+
+  }
+}
+
+const totalIncome = transactions
+  .filter(t => t.type === 'income')
+  .reduce((acc, t) => acc + t.amount, 0)
+
+const totalExpenses = transactions
+  .filter(t => t.type === 'expense')
+  .reduce((acc, t) => acc + t.amount, 0)
+
+const balance = totalIncome - totalExpenses
 const formatDate = (dateString: string) => {
   // Creamos la fecha a partir del string
   const date = new Date(dateString);
@@ -206,10 +260,13 @@ const formatDate = (dateString: string) => {
           </DialogHeader>
           {editingTransaction && (
             <TransactionForm
-              editTransaction={editingTransaction}
-              onCancel={() => setEditingTransaction(null)}
-              onSuccess={() => setEditingTransaction(null)}
-            />
+                editTransaction={editingTransaction}
+                onCancel={() => setEditingTransaction(null)}
+                onSuccess={async () => {
+                  await loadTransactions()
+                  setEditingTransaction(null)
+                }}
+              />
           )}
         </DialogContent>
       </Dialog>
@@ -250,12 +307,22 @@ const formatDate = (dateString: string) => {
             </Button>
             <Button 
               variant="destructive" 
-              onClick={() => {
-                if (deletingTransaction) {
-                  deleteTransaction(deletingTransaction.id)
-                  setDeletingTransaction(null)
-                }
-              }}
+              onClick={async () => {
+                  if (deletingTransaction) {
+
+                    try {
+
+                      await deleteTransactionApi(deletingTransaction.id)
+
+                      await loadTransactions()
+
+                      setDeletingTransaction(null)
+
+                    } catch (error) {
+                      console.error(error)
+                    }
+                  }
+                }}
             >
               Eliminar
             </Button>

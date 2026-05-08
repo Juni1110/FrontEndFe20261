@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { useTransactions } from '@/contexts/transactions-context'
+import { createSavingGoal } from '@/lib/api/saving-goals'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,46 +9,59 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Check, Target } from 'lucide-react'
 
 export function SavingsGoalForm() {
-  const { addSavingsGoal } = useTransactions()
+
   const [name, setName] = useState('')
   const [targetAmount, setTargetAmount] = useState('')
   const [deadline, setDeadline] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setSuccess(false)
+  const handleSubmit = async (e: React.FormEvent) => {
 
-    if (!name.trim()) {
-      setError('Por favor ingresa un nombre para la meta')
+  e.preventDefault()
+
+  setError('')
+  setSuccess(false)
+
+  if (!name.trim()) {
+    setError('Por favor ingresa un nombre para la meta')
+    return
+  }
+
+  const amount = parseFloat(targetAmount)
+
+  if (isNaN(amount) || amount <= 0) {
+    setError('El monto objetivo debe ser mayor a cero')
+    return
+  }
+
+  if (deadline) {
+
+    const deadlineDate = new Date(deadline)
+
+    const today = new Date()
+
+    today.setHours(0, 0, 0, 0)
+
+    if (deadlineDate < today) {
+      setError('La fecha limite debe ser una fecha futura')
       return
     }
+  }
 
-    const amount = parseFloat(targetAmount)
-    if (isNaN(amount) || amount <= 0) {
-      setError('El monto objetivo debe ser mayor a cero')
-      return
+  try {
+
+    const payload = {
+      nombre: name.trim(),
+      montoObjetivo: amount,
+      fechaLimite: deadline || null,
+      montoActual: 0
     }
 
-    if (deadline) {
-      const deadlineDate = new Date(deadline)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      if (deadlineDate < today) {
-        setError('La fecha limite debe ser una fecha futura')
-        return
-      }
-    }
-
-    addSavingsGoal({
-      name: name.trim(),
-      targetAmount: amount,
-      deadline: deadline || undefined,
-    })
+    await createSavingGoal(payload)
 
     setSuccess(true)
+
     setName('')
     setTargetAmount('')
     setDeadline('')
@@ -56,8 +69,14 @@ export function SavingsGoalForm() {
     setTimeout(() => {
       setSuccess(false)
     }, 3000)
-  }
 
+  } catch (error) {
+
+    console.error(error)
+
+    setError('Error creando meta')
+  }
+}
   return (
     <Card className="w-full max-w-md">
       <CardHeader>

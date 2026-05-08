@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from 'react'
-import { useTransactions } from '@/contexts/transactions-context'
+import { useEffect } from 'react'
+import { generateReport } from '@/lib/api/reports'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
@@ -19,13 +19,53 @@ const MONTHS = [
 ]
 
 export function MonthlyReport() {
-  const { getMonthlyData } = useTransactions()
+const [monthData, setMonthData] = useState<any>({
+  income: 0,
+  expenses: 0,
+  contributions: 0,
+  balance: 0,
+  transactions: [],
+})
   const currentDate = new Date()
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth())
+  useEffect(() => {
 
-  const monthData = getMonthlyData(selectedYear, selectedMonth)
-  const hasData = monthData.transactions.length > 0 || monthData.contributions > 0
+  loadReport()
+
+}, [selectedMonth, selectedYear])
+
+const loadReport = async () => {
+
+  try {
+
+    const payload = {
+      mes: selectedMonth + 1,
+      anho: selectedYear,
+      titularId: "UUID_DEL_USUARIO"
+    }
+
+    const data = await generateReport(payload)
+
+    setMonthData({
+      income: data.ingresos || 0,
+      expenses: data.gastos || 0,
+      contributions: data.aportes || 0,
+      balance: data.balance || 0,
+      transactions: data.transacciones || [],
+    })
+
+  } catch (error) {
+
+    console.error(error)
+
+  }
+}
+
+const hasData =
+  monthData.transactions?.length > 0 ||
+  monthData.contributions > 0
+
   const isNegativeBalance = monthData.balance < 0
 
   const formatCurrency = (amount: number) => {
@@ -38,14 +78,31 @@ export function MonthlyReport() {
   const years = Array.from({ length: 5 }, (_, i) => currentDate.getFullYear() - i)
 
   // Group transactions by category
-  const categoryTotals = monthData.transactions.reduce((acc, t) => {
-    const key = `${t.type}-${t.category}`
+const categoryTotals = (monthData.transactions || []).reduce(
+  (acc: any, t: any) => {
+
+    const type =
+      t.tipo === 'INGRESO'
+        ? 'income'
+        : 'expense'
+
+    const key = `${type}-${t.categoria}`
+
     if (!acc[key]) {
-      acc[key] = { type: t.type, category: t.category, total: 0 }
+      acc[key] = {
+        type,
+        category: t.categoria,
+        total: 0
+      }
     }
-    acc[key].total += t.amount
+
+    acc[key].total += t.monto
+
     return acc
-  }, {} as Record<string, { type: string; category: string; total: number }>)
+
+  },
+  {}
+)
 
   const incomeByCategory = Object.values(categoryTotals).filter(c => c.type === 'income')
   const expensesByCategory = Object.values(categoryTotals).filter(c => c.type === 'expense')
@@ -216,7 +273,7 @@ export function MonthlyReport() {
                       .sort((a, b) => b.total - a.total)
                       .map((item, idx) => (
                         <div key={idx} className="flex items-center justify-between">
-                          <span className="text-sm">{getCategoryLabel(item.category as never)}</span>
+                          <span className="text-sm">{item.category}</span>
                           <span className="font-medium text-green-600">
                             {formatCurrency(item.total)}
                           </span>
