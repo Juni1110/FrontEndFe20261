@@ -275,31 +275,24 @@ export function TransactionForm({
             <Label>Categoria</Label>
 
             <Select
-              value={category}
-              onValueChange={setCategory}
-            >
+                value={category}
+                onValueChange={setCategory}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona una categoria" />
+                </SelectTrigger>
 
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona una categoria" />
-              </SelectTrigger>
-
-              <SelectContent>
-
-                {categories.map((category) => (
-
-                  <SelectItem
-                    key={category.categoriaId}
-                    value={category.categoriaId}
-                  >
-                    {category.nombre}
-                  </SelectItem>
-
-                ))}
-
-              </SelectContent>
-
-            </Select>
-
+                <SelectContent>
+                  {categories.map((category, index) => (
+                    <SelectItem
+                      key={index}
+                      value={category.nombre}
+                    >
+                      {category.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
           </div>
 
           <div className="flex flex-col gap-2">
