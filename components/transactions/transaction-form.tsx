@@ -283,15 +283,15 @@ export function TransactionForm({
                 </SelectTrigger>
 
                 <SelectContent>
-                  {categories.map((category, index) => (
-                    <SelectItem
-                      key={index}
-                      value={category.nombre}
-                    >
-                      {category.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                    {categories.map((category, index) => (
+                      <SelectItem
+                        key={index}
+                        value={category.nombre}
+                      >
+                        {category.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
               </Select>
           </div>
 
