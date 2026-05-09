@@ -10,21 +10,27 @@ export async function getTransactions() {
 
   const data = await response.json()
 
-  return data.map((item: any) => ({
+return data.map((item: any) => {
+
+  let transactionType = 'goal'
+
+  if (item.tipo === 'INGRESO') {
+    transactionType = 'income'
+  } else if (item.tipo === 'GASTO') {
+    transactionType = 'expense'
+  }
+
+  return {
     id: item.transactionId,
     title: item.nombre,
     amount: item.monto,
     description: item.descripcion || '',
-    type:
-      item.tipo === 'INGRESO'
-        ? 'income'
-        : item.tipo === 'GASTO'
-        ? 'expense'
-        : 'goal',
+    type: transactionType,
     date: item.fecha,
     category: item.nombreCategoria || 'Sin categoria',
     owner: item.nombreTitular,
-  }))
+  }
+})
 }
 
 export async function createTransaction(data: any) {
