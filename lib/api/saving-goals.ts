@@ -1,4 +1,4 @@
-const API_URL = 'https://fabrica-2026s1.onrender.com/api/saving-goals'
+const API_URL = 'http://fabrica-2026s1.onrender.com/api/saving-goals'
 
 export async function getSavingGoals() {
 
