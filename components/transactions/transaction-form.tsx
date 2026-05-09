@@ -95,6 +95,33 @@ export function TransactionForm({
 }, [])
 
 const loadCategories = async () => {
+
+  try {
+
+    const transactions = await getTransactions()
+
+    const uniqueCategories = [
+      ...new Set(
+        transactions
+          .map((t: any) => t.category)
+          .filter(Boolean)
+      )
+    ]
+
+    const formatted = uniqueCategories.map((name) => ({
+      categoriaId: name,
+      nombre: name
+    }))
+
+    setCategories(formatted)
+
+  } catch (error) {
+
+    console.error(error)
+
+  }
+}
+/** const loadCategories = async () => {
   try {
 
     const transactions = await getTransactions()
@@ -119,7 +146,7 @@ const loadCategories = async () => {
   }
 }
 
-  /** useEffect(() => {
+  useEffect(() => {
 
     loadCategories()
 
