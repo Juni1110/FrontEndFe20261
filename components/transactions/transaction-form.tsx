@@ -29,9 +29,11 @@ import {
   type Transaction,
 } from '@/types'
 
-import { getCategories } from '@/lib/api/categories'
+// import { getCategories } from '@/lib/api/categories'
+
 
 import {
+  getTransactions,
   createTransaction as createTransactionApi,
   updateTransaction as updateTransactionApi
 } from '@/lib/api/transactions'
@@ -89,6 +91,35 @@ export function TransactionForm({
   }, [editTransaction])
 
   useEffect(() => {
+  loadCategories()
+}, [])
+
+const loadCategories = async () => {
+  try {
+
+    const transactions = await getTransactions()
+
+    const uniqueCategories = [
+      ...new Set(
+        transactions
+          .map((t: any) => t.category)
+          .filter(Boolean)
+      )
+    ]
+
+    const formatted = uniqueCategories.map((name) => ({
+      categoriaId: name,
+      nombre: name
+    }))
+
+    setCategories(formatted)
+
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+  /** useEffect(() => {
 
     loadCategories()
 
@@ -109,7 +140,7 @@ export function TransactionForm({
       console.error(error)
 
     }
-  }
+  }*/
 
   const handleTypeChange = (newType: 'income' | 'expense') => {
 
