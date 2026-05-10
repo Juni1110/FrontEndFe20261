@@ -1,4 +1,4 @@
-const API_URL = 'https://fabrica-2026s1.onrender.com/api/reports'
+const API_URL = 'http://fabrica-2026s1.onrender.com/api/reports'
 
 export async function generateReport(data: any) {
 
