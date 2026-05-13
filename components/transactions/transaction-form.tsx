@@ -283,32 +283,32 @@ export function TransactionForm({
             <Label>Categoria</Label>
 
             <Select
-              value={category || ""}
-              onValueChange={setCategory}
-            >
+                value={category}
+                onValueChange={setCategory}
+              >
 
-              <SelectTrigger>
+                <SelectTrigger>
 
-                <SelectValue placeholder="Selecciona una categoria" />
+                  <SelectValue placeholder="Selecciona una categoria" />
 
-              </SelectTrigger>
+                </SelectTrigger>
 
-              <SelectContent>
+                <SelectContent>
 
-                {categories.map((cat, index) => (
+                  {categories.map((cat) => (
 
-                  <SelectItem
-                    key={index}
-                    value={cat.nombre}
-                  >
-                    {cat.nombre}
-                  </SelectItem>
+                    <SelectItem
+                      key={cat.id}
+                      value={cat.id.toString()}
+                    >
+                      {cat.name}
+                    </SelectItem>
 
-                ))}
+                  ))}
 
-              </SelectContent>
+                </SelectContent>
 
-            </Select>
+              </Select>
 
           </div>
 
