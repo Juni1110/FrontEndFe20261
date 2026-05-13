@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+
 import {
   Card,
   CardContent,
@@ -58,7 +59,10 @@ export function TransactionForm({
     editTransaction?.amount?.toString() || ''
   )
 
-  const [category, setCategory] = useState('')
+  // CORREGIDO
+  const [category, setCategory] = useState(
+    editTransaction?.category?.toString() || ''
+  )
 
   const [description, setDescription] = useState(
     editTransaction?.description || ''
@@ -81,6 +85,10 @@ export function TransactionForm({
 
       setType(editTransaction.type)
       setAmount(editTransaction.amount.toString())
+
+      // CORREGIDO
+      setCategory(editTransaction.category?.toString() || '')
+
       setDescription(editTransaction.description)
       setDate(editTransaction.date)
 
@@ -275,24 +283,33 @@ export function TransactionForm({
             <Label>Categoria</Label>
 
             <Select
-                value={category}
-                onValueChange={setCategory}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una categoria" />
-                </SelectTrigger>
+              value={category || ""}
+              onValueChange={setCategory}
+            >
 
-                <SelectContent>
-                    {categories.map((category, index) => (
-                      <SelectItem
-                        key={index}
-                        value={category.nombre}
-                      >
-                        {category.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-              </Select>
+              <SelectTrigger>
+
+                <SelectValue placeholder="Selecciona una categoria" />
+
+              </SelectTrigger>
+
+              <SelectContent>
+
+                {categories.map((cat, index) => (
+
+                  <SelectItem
+                    key={index}
+                    value={cat.nombre}
+                  >
+                    {cat.nombre}
+                  </SelectItem>
+
+                ))}
+
+              </SelectContent>
+
+            </Select>
+
           </div>
 
           <div className="flex flex-col gap-2">
