@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -49,8 +48,6 @@ export function TransactionForm({
   onSuccess
 }: TransactionFormProps) {
 
-  const router = useRouter()
-
   const [type, setType] = useState<'income' | 'expense'>(
     editTransaction?.type || 'income'
   )
@@ -59,7 +56,6 @@ export function TransactionForm({
     editTransaction?.amount?.toString() || ''
   )
 
-  // CORREGIDO
   const [category, setCategory] = useState(
     editTransaction?.category?.toString() || ''
   )
@@ -84,13 +80,22 @@ export function TransactionForm({
     if (editTransaction) {
 
       setType(editTransaction.type)
-      setAmount(editTransaction.amount.toString())
 
-      // CORREGIDO
-      setCategory(editTransaction.category?.toString() || '')
+      setAmount(
+        editTransaction.amount.toString()
+      )
 
-      setDescription(editTransaction.description)
-      setDate(editTransaction.date)
+      setCategory(
+        editTransaction.category?.toString() || ''
+      )
+
+      setDescription(
+        editTransaction.description
+      )
+
+      setDate(
+        editTransaction.date
+      )
 
     }
 
@@ -116,17 +121,22 @@ export function TransactionForm({
 
       console.error(error)
 
+      setError('Error cargando categorias')
+
     }
   }
 
-  const handleTypeChange = (newType: 'income' | 'expense') => {
+  const handleTypeChange = (
+    newType: 'income' | 'expense'
+  ) => {
 
     setType(newType)
-    setCategory('')
 
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (
+    e: React.FormEvent
+  ) => {
 
     e.preventDefault()
 
@@ -137,21 +147,40 @@ export function TransactionForm({
 
     if (isNaN(amountNumber) || amountNumber <= 0) {
 
-      setError('Por favor ingresa un monto valido mayor a cero')
+      setError(
+        'Por favor ingresa un monto valido mayor a cero'
+      )
+
       return
 
     }
 
     if (!category) {
 
-      setError('Por favor selecciona una categoria')
+      setError(
+        'Por favor selecciona una categoria'
+      )
+
+      return
+
+    }
+
+    if (!description.trim()) {
+
+      setError(
+        'Por favor ingresa una descripcion'
+      )
+
       return
 
     }
 
     if (!date) {
 
-      setError('Por favor selecciona una fecha')
+      setError(
+        'Por favor selecciona una fecha'
+      )
+
       return
 
     }
@@ -159,31 +188,57 @@ export function TransactionForm({
     try {
 
       const payload = {
+
+        nombre: description.trim(),
+
         descripcion: description.trim(),
+
         monto: amountNumber,
-        tipo: type === 'income' ? 'INGRESO' : 'GASTO',
-        categoriaId: Number(category),
+
+        tipo:
+          type === 'income'
+            ? 'INGRESO'
+            : 'GASTO',
+
+        categoriaId: category,
+
         fecha: date,
+
+        titularId:
+          "550e8400-e29b-41d4-a716-446655440000"
+
       }
 
       console.log(payload)
 
       if (isEditing && editTransaction) {
 
-        await updateTransactionApi(editTransaction.id, payload)
+        await updateTransactionApi(
+          editTransaction.id,
+          payload
+        )
 
         onSuccess?.()
 
       } else {
 
-        await createTransactionApi(payload)
+        await createTransactionApi(
+          payload
+        )
 
         setSuccess(true)
 
         setAmount('')
+
         setCategory('')
+
         setDescription('')
-        setDate(new Date().toISOString().split('T')[0])
+
+        setDate(
+          new Date()
+            .toISOString()
+            .split('T')[0]
+        )
 
         setTimeout(() => {
 
@@ -192,30 +247,40 @@ export function TransactionForm({
         }, 3000)
 
         onSuccess?.()
+
       }
 
     } catch (err) {
 
       console.error(err)
 
-      setError('Error al guardar la transacción')
+      setError(
+        'Error al guardar la transacción'
+      )
 
     }
   }
 
   return (
+
     <Card className="w-full max-w-lg">
 
       <CardHeader>
 
         <CardTitle>
-          {isEditing ? 'Editar Transaccion' : 'Nueva Transaccion'}
+
+          {isEditing
+            ? 'Editar Transaccion'
+            : 'Nueva Transaccion'}
+
         </CardTitle>
 
         <CardDescription>
+
           {isEditing
             ? 'Modifica los datos de la transaccion'
             : 'Registra un ingreso o gasto'}
+
         </CardDescription>
 
       </CardHeader>
@@ -229,13 +294,17 @@ export function TransactionForm({
 
           <div className="flex flex-col gap-2">
 
-            <Label>Tipo de Transaccion</Label>
+            <Label>
+              Tipo de Transaccion
+            </Label>
 
             <div className="flex gap-3">
 
               <button
                 type="button"
-                onClick={() => handleTypeChange('income')}
+                onClick={() =>
+                  handleTypeChange('income')
+                }
                 className={cn(
                   "flex-1 py-3 border-2 rounded-md flex items-center justify-center gap-2",
                   type === 'income'
@@ -243,13 +312,18 @@ export function TransactionForm({
                     : "border-border"
                 )}
               >
+
                 <TrendingUp className="size-4" />
+
                 Ingreso
+
               </button>
 
               <button
                 type="button"
-                onClick={() => handleTypeChange('expense')}
+                onClick={() =>
+                  handleTypeChange('expense')
+                }
                 className={cn(
                   "flex-1 py-3 border-2 rounded-md flex items-center justify-center gap-2",
                   type === 'expense'
@@ -257,8 +331,11 @@ export function TransactionForm({
                     : "border-border"
                 )}
               >
+
                 <TrendingDown className="size-4" />
+
                 Gasto
+
               </button>
 
             </div>
@@ -272,7 +349,9 @@ export function TransactionForm({
             <Input
               type="number"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) =>
+                setAmount(e.target.value)
+              }
               placeholder="0.00"
             />
 
@@ -283,32 +362,36 @@ export function TransactionForm({
             <Label>Categoria</Label>
 
             <Select
-                value={category}
-                onValueChange={setCategory}
-              >
+              value={category || ""}
+              onValueChange={setCategory}
+            >
 
-                <SelectTrigger>
+              <SelectTrigger>
 
-                  <SelectValue placeholder="Selecciona una categoria" />
+                <SelectValue
+                  placeholder="Selecciona una categoria"
+                />
 
-                </SelectTrigger>
+              </SelectTrigger>
 
-                <SelectContent>
+              <SelectContent>
 
-                  {categories.map((cat) => (
+                {categories.map((cat) => (
 
-                    <SelectItem
-                      key={cat.id}
-                      value={cat.id.toString()}
-                    >
-                      {cat.name}
-                    </SelectItem>
+                  <SelectItem
+                    key={cat.id}
+                    value={cat.id.toString()}
+                  >
 
-                  ))}
+                    {cat.name}
 
-                </SelectContent>
+                  </SelectItem>
 
-              </Select>
+                ))}
+
+              </SelectContent>
+
+            </Select>
 
           </div>
 
@@ -319,7 +402,9 @@ export function TransactionForm({
             <Input
               type="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={(e) =>
+                setDate(e.target.value)
+              }
             />
 
           </div>
@@ -330,22 +415,32 @@ export function TransactionForm({
 
             <Textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) =>
+                setDescription(e.target.value)
+              }
               placeholder="Describe la transaccion"
             />
 
           </div>
 
           {error && (
+
             <p className="text-red-500 text-sm">
+
               {error}
+
             </p>
+
           )}
 
           {success && (
+
             <p className="text-green-500 text-sm">
+
               Guardado correctamente
+
             </p>
+
           )}
 
           <Button type="submit">
