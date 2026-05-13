@@ -162,7 +162,7 @@ export function TransactionForm({
         descripcion: description.trim(),
         monto: amountNumber,
         tipo: type === 'income' ? 'INGRESO' : 'GASTO',
-        categoriaId: category,
+        categoriaId: Number(category),,
         fecha: date,
       }
 
