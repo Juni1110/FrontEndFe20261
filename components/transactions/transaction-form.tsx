@@ -29,12 +29,14 @@ import {
   type Transaction,
 } from '@/types'
 
-import { getCategories } from '@/lib/api/categories'
+import { createCategory, getCategories } from '@/lib/api/categories'
 
 import {
   createTransaction as createTransactionApi,
   updateTransaction as updateTransactionApi
 } from '@/lib/api/transactions'
+
+const DEFAULT_TITULAR_ID = 'aa8a8b1d-e583-4168-97f6-64e6a6986397'
 
 interface TransactionFormProps {
   editTransaction?: Transaction
@@ -121,7 +123,7 @@ export function TransactionForm({
 
       console.error(error)
 
-      setError('Error cargando categorias')
+      setError(error instanceof Error ? error.message : 'Error cargando categorias')
 
     }
   }
@@ -187,6 +189,29 @@ export function TransactionForm({
 
     try {
 
+      try {
+
+        await createCategory(
+          category,
+          DEFAULT_TITULAR_ID
+        )
+
+      } catch (categoryError) {
+
+        const categoryMessage = categoryError instanceof Error
+          ? categoryError.message
+          : ''
+
+        const isDuplicateCategory = /ya existe|already exists|409/i.test(categoryMessage)
+
+        if (!isDuplicateCategory) {
+
+          console.warn('No se pudo asegurar la categoría antes de guardar la transacción, continuando con el guardado.', categoryError)
+
+        }
+
+      }
+
       const payload = {
 
         nombre: description.trim(),
@@ -200,12 +225,11 @@ export function TransactionForm({
             ? 'INGRESO'
             : 'GASTO',
 
-        categoriaId: category,
-
         fecha: date,
 
-        titularId:
-          "550e8400-e29b-41d4-a716-446655440000"
+        titularId: DEFAULT_TITULAR_ID,
+
+        nombreCategoria: category,
 
       }
 
@@ -255,7 +279,9 @@ export function TransactionForm({
       console.error(err)
 
       setError(
-        'Error al guardar la transacción'
+        err instanceof Error
+          ? err.message
+          : 'Error al guardar la transacción'
       )
 
     }

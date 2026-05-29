@@ -1,14 +1,8 @@
-const API_URL = 'https://fabrica-2026s1.onrender.com/api/transactions'
+import { apiRequest } from './client'
 
 export async function getTransactions() {
 
-  const response = await fetch(API_URL)
-
-  if (!response.ok) {
-    throw new Error('Error obteniendo transacciones')
-  }
-
-  const data = await response.json()
+  const data = await apiRequest('/api/transactions')
 
 return data.map((item: any) => {
 
@@ -35,45 +29,29 @@ return data.map((item: any) => {
 
 export async function createTransaction(data: any) {
 
-  const response = await fetch(API_URL, {
+  return apiRequest('/api/transactions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
   })
-
-  if (!response.ok) {
-    throw new Error('Error creando transaccion')
-  }
-
-  return response.json()
 }
 
 export async function updateTransaction(id: string, data: any) {
 
-  const response = await fetch(`${API_URL}/${id}`, {
+  return apiRequest(`/api/transactions/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
   })
-
-  if (!response.ok) {
-    throw new Error('Error actualizando transaccion')
-  }
-
-  return response.json()
 }
 
 export async function deleteTransaction(id: string) {
 
-  const response = await fetch(`${API_URL}/${id}`, {
+  return apiRequest(`/api/transactions/${id}`, {
     method: 'DELETE',
   })
-
-  if (!response.ok) {
-    throw new Error('Error eliminando transaccion')
-  }
 }
