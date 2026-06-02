@@ -30,13 +30,12 @@ import {
 } from '@/types'
 
 import { createCategory, getCategories } from '@/lib/api/categories'
+import { GENERIC_TITULAR_ID } from '@/lib/api/constants'
 
 import {
   createTransaction as createTransactionApi,
   updateTransaction as updateTransactionApi
 } from '@/lib/api/transactions'
-
-const DEFAULT_TITULAR_ID = 'aa8a8b1d-e583-4168-97f6-64e6a6986397'
 
 interface TransactionFormProps {
   editTransaction?: Transaction
@@ -193,7 +192,7 @@ export function TransactionForm({
 
         await createCategory(
           category,
-          DEFAULT_TITULAR_ID
+          GENERIC_TITULAR_ID
         )
 
       } catch (categoryError) {
@@ -227,7 +226,8 @@ export function TransactionForm({
 
         fecha: date,
 
-        titularId: DEFAULT_TITULAR_ID,
+        titularId: GENERIC_TITULAR_ID,
+        titular_id: GENERIC_TITULAR_ID,
 
         nombreCategoria: category,
 

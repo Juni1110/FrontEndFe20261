@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { generateReport } from '@/lib/api/reports'
+import { GENERIC_TITULAR_ID } from '@/lib/api/constants'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
@@ -42,7 +43,8 @@ const loadReport = async () => {
     const payload = {
       mes: selectedMonth + 1,
       anho: selectedYear,
-      titularId: "UUID_DEL_USUARIO"
+      titularId: GENERIC_TITULAR_ID,
+      titular_id: GENERIC_TITULAR_ID,
     }
 
     const data = await generateReport(payload)

@@ -21,6 +21,7 @@ export async function createCategory(name: string, titularId: string) {
     body: JSON.stringify({
       nombre: name,
       titularId,
+      titular_id: titularId,
     }),
   })
 }
