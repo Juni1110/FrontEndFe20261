@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from 'react'
 import type { User, AuthState } from '@/types'
-import { loginUser, registerUser, logoutUser, type AuthResponse } from '@/lib/api/auth'
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>
@@ -40,20 +39,14 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     }
   }, [])
 
-  const persistSession = useCallback((data: AuthResponse, fallbackName: string) => {
-    const rawUser = data.user ?? data.usuario ?? null
-    const token = data.token ?? data.accessToken ?? data.jwt ?? null
-
+  const persistSession = useCallback((email: string, fallbackName: string) => {
     const user: User = {
-      id: String(rawUser?.id ?? 'auth-user'),
-      name: String(rawUser?.name ?? fallbackName ?? 'Usuario'),
-      email: String(rawUser?.email ?? ''),
+      id: `demo-user-${Date.now()}`,
+      name: fallbackName || email.split('@')[0] || 'Usuario',
+      email,
     }
 
-    if (token) {
-      localStorage.setItem(STORAGE_KEY, token)
-    }
-
+    localStorage.setItem(STORAGE_KEY, 'demo-token')
     localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(user))
 
     setState({ user, isAuthenticated: true, isLoading: false })
@@ -63,8 +56,12 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     setState(prev => ({ ...prev, isLoading: true }))
 
     try {
-      const response = await loginUser(email, password)
-      persistSession(response as AuthResponse, email.split('@')[0])
+      if (!email.trim() || !password.trim()) {
+        setState(prev => ({ ...prev, isLoading: false }))
+        return false
+      }
+
+      persistSession(email.trim(), email.split('@')[0])
       return true
     } catch {
       setState(prev => ({ ...prev, isLoading: false }))
@@ -76,8 +73,12 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     setState(prev => ({ ...prev, isLoading: true }))
 
     try {
-      const response = await registerUser(name, email, password)
-      persistSession(response as AuthResponse, name)
+      if (!name.trim() || !email.trim() || !password.trim()) {
+        setState(prev => ({ ...prev, isLoading: false }))
+        return false
+      }
+
+      persistSession(email.trim(), name.trim())
       return true
     } catch {
       setState(prev => ({ ...prev, isLoading: false }))
@@ -87,15 +88,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const logout = useCallback(async () => {
     try {
-      const token = localStorage.getItem(STORAGE_KEY)
-      if (token) {
-        await logoutUser()
-      }
-    } catch {
-      // Ignore backend logout errors and continue clearing the local session.
-    } finally {
       localStorage.removeItem(STORAGE_KEY)
       localStorage.removeItem(STORAGE_USER_KEY)
+    } finally {
       setState({ user: null, isAuthenticated: false, isLoading: false })
     }
   }, [])
