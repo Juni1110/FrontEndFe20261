@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { GENERIC_TITULAR_ID } from '@/lib/api/constants'
 
 const BACKEND_API_BASE_URL = (process.env.BACKEND_API_BASE_URL || 'https://fabrica-2026s1.onrender.com')
   .replace(/\/+$/, '')
@@ -40,9 +41,11 @@ async function proxy(request: NextRequest) {
   const backendOrigin = new URL(BACKEND_API_BASE_URL).origin
   headers.set('origin', backendOrigin)
 
-  const body = ['GET', 'HEAD'].includes(request.method)
+  const rawBody = ['GET', 'HEAD'].includes(request.method)
     ? undefined
     : await request.text()
+
+  const body = normalizeCategoryPayload(path, rawBody, request.method)
 
   const response = await fetch(targetUrl, {
     method: request.method,
@@ -58,4 +61,37 @@ async function proxy(request: NextRequest) {
     status: response.status,
     headers: responseHeaders,
   })
+}
+
+function normalizeCategoryPayload(path: string, rawBody: string | undefined, method: string) {
+  if (!rawBody || !['POST', 'PUT', 'PATCH'].includes(method)) {
+    return rawBody
+  }
+
+  if (!path.startsWith('categories')) {
+    return rawBody
+  }
+
+  try {
+    const parsed = JSON.parse(rawBody)
+
+    if (parsed && typeof parsed === 'object') {
+      const hasTitularId = typeof parsed.titularId === 'string' && parsed.titularId.trim().length > 0
+      const hasTitularIdSnake = typeof parsed.titular_id === 'string' && parsed.titular_id.trim().length > 0
+
+      if (!hasTitularId) {
+        parsed.titularId = GENERIC_TITULAR_ID
+      }
+
+      if (!hasTitularIdSnake) {
+        parsed.titular_id = GENERIC_TITULAR_ID
+      }
+
+      return JSON.stringify(parsed)
+    }
+  } catch {
+    // Keep the original body if it is not valid JSON.
+  }
+
+  return rawBody
 }
