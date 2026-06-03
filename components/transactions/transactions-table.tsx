@@ -1,9 +1,12 @@
 "use client"
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
+import {
+  getTransactions,
+  deleteTransaction as deleteTransactionApi
+} from '@/lib/api/transactions'
 import { TransactionForm } from './transaction-form'
-import { useTransactions } from '@/contexts/transactions-context'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -33,7 +36,7 @@ import { TrendingUp, TrendingDown, Pencil, Trash2, Receipt, AlertTriangle } from
 import { getCategoryLabel, type Transaction } from '@/types'
 
 export function TransactionsTable() {
-  const { transactions, deleteTransaction } = useTransactions()
+const [transactions, setTransactions] = useState<Transaction[]>([])
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null)
 
@@ -43,6 +46,25 @@ export function TransactionsTable() {
       currency: 'MXN',
     }).format(amount)
   }
+useEffect(() => {
+  loadTransactions()
+}, [])
+
+const loadTransactions = async () => {
+
+  try {
+
+    const data = await getTransactions()
+
+    setTransactions(data as Transaction[])
+
+  } catch (error) {
+
+    console.error(error)
+
+  }
+}
+
 const totalIncome = transactions
   .filter(t => t.type === 'income')
   .reduce((acc, t) => acc + t.amount, 0)
@@ -150,7 +172,7 @@ const formatDate = (dateString: string) => {
                 <TableHead>Descripcion</TableHead>
                 <TableHead>Fecha</TableHead>
                 <TableHead className="text-right">Monto</TableHead>
-                <TableHead className="w-25">Acciones</TableHead>
+                <TableHead className="w-[100px]">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -177,7 +199,7 @@ const formatDate = (dateString: string) => {
                       {getCategoryLabel(transaction.category as never)}
                     </span>
                   </TableCell>
-                  <TableCell className="max-w-50 truncate">
+                  <TableCell className="max-w-[200px] truncate">
                     {transaction.description || '-'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
@@ -229,7 +251,8 @@ const formatDate = (dateString: string) => {
             <TransactionForm
                 editTransaction={editingTransaction}
                 onCancel={() => setEditingTransaction(null)}
-                onSuccess={() => {
+                onSuccess={async () => {
+                  await loadTransactions()
                   setEditingTransaction(null)
                 }}
               />
@@ -278,7 +301,9 @@ const formatDate = (dateString: string) => {
 
                     try {
 
-                      deleteTransaction(deletingTransaction.id)
+                      await deleteTransactionApi(deletingTransaction.id)
+
+                      await loadTransactions()
 
                       setDeletingTransaction(null)
 

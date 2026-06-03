@@ -11,7 +11,6 @@ interface AuthContextType extends AuthState {
 
 const STORAGE_KEY = 'finanzas-auth-token'
 const STORAGE_USER_KEY = 'finanzas-auth-user'
-const USERS_STORAGE_KEY = 'finanzas-users'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
@@ -40,16 +39,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     }
   }, [])
 
-  const getStoredUsers = useCallback((): User[] => {
-    try {
-      const raw = localStorage.getItem(USERS_STORAGE_KEY)
-      return raw ? (JSON.parse(raw) as User[]) : []
-    } catch {
-      return []
+  const persistSession = useCallback((email: string, fallbackName: string) => {
+    const user: User = {
+      id: `demo-user-${Date.now()}`,
+      name: fallbackName || email.split('@')[0] || 'Usuario',
+      email,
     }
-  }, [])
 
-  const persistSession = useCallback((user: User) => {
     localStorage.setItem(STORAGE_KEY, 'demo-token')
     localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(user))
 
@@ -65,15 +61,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         return false
       }
 
-      const users = getStoredUsers()
-      const user = users.find(item => item.email.toLowerCase() === email.trim().toLowerCase() && item.password === password)
-
-      if (!user) {
-        setState(prev => ({ ...prev, isLoading: false }))
-        return false
-      }
-
-      persistSession(user)
+      persistSession(email.trim(), email.split('@')[0])
       return true
     } catch {
       setState(prev => ({ ...prev, isLoading: false }))
@@ -90,29 +78,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         return false
       }
 
-      const users = getStoredUsers()
-      const normalizedEmail = email.trim().toLowerCase()
-
-      if (users.some(item => item.email.toLowerCase() === normalizedEmail)) {
-        setState(prev => ({ ...prev, isLoading: false }))
-        return false
-      }
-
-      const user: User = {
-        id: crypto.randomUUID(),
-        name: name.trim(),
-        email: normalizedEmail,
-        password,
-      }
-
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify([...users, user]))
-      persistSession(user)
+      persistSession(email.trim(), name.trim())
       return true
     } catch {
       setState(prev => ({ ...prev, isLoading: false }))
       return false
     }
-  }, [getStoredUsers, persistSession])
+  }, [persistSession])
 
   const logout = useCallback(async () => {
     try {

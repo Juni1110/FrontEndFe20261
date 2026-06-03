@@ -2,7 +2,6 @@ export interface User {
   id: string
   name: string
   email: string
-  password?: string
 }
 
 export type TransactionCategory = 
@@ -28,7 +27,6 @@ export interface Transaction {
   createdAt?: string
   title?: string
   owner?: string
-  userId?: string
 }
 
 export interface SavingsGoal {
