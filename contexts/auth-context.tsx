@@ -23,19 +23,14 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   useEffect(() => {
     try {
-      const savedUser = localStorage.getItem(STORAGE_USER_KEY)
-      const savedToken = localStorage.getItem(STORAGE_KEY)
-
-      if (savedUser && savedToken) {
-        setState({
-          user: JSON.parse(savedUser) as User,
-          isAuthenticated: true,
-          isLoading: false,
-        })
-      }
-    } catch {
       localStorage.removeItem(STORAGE_KEY)
       localStorage.removeItem(STORAGE_USER_KEY)
+    } finally {
+      setState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+      })
     }
   }, [])
 
