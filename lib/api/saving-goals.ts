@@ -1,4 +1,5 @@
 import { apiRequest } from './client'
+import { GENERIC_TITULAR_ID } from './constants'
 
 export async function getSavingGoals() {
 
@@ -12,7 +13,10 @@ export async function createSavingGoal(data: any) {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      ...data,
+      titularId: data.titularId ?? GENERIC_TITULAR_ID,
+    }),
   })
 }
 
@@ -23,6 +27,9 @@ export async function updateSavingGoal(id: string, data: any) {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      ...data,
+      titularId: data.titularId ?? GENERIC_TITULAR_ID,
+    }),
   })
 }

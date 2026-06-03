@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,7 +8,6 @@ import { Progress } from '@/components/ui/progress'
 import { Empty } from '@/components/ui/empty'
 import { Target, Plus, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import type { SavingsGoal } from '@/types'
-import { useEffect } from 'react'
 
 import {
   getSavingGoals,
@@ -17,26 +16,32 @@ import {
 
 export function SavingsGoalsList() {
   const [savingsGoals, setSavingsGoals] = useState<any[]>([])
+
   useEffect(() => {
+    loadGoals()
+  }, [])
 
-  loadGoals()
+  const loadGoals = async () => {
+    try {
+      const data = await getSavingGoals()
 
-}, [])
+      const mapped = (Array.isArray(data) ? data : []).map((goal: any) => ({
+        id: goal.goalId ?? goal.id,
+        name: goal.nombre ?? goal.name ?? 'Meta de ahorro',
+        targetAmount: Number(goal.montoObjetivo ?? goal.targetAmount ?? 0),
+        currentAmount: Number(goal.avance ?? goal.montoActual ?? goal.currentAmount ?? 0),
+        deadline: goal.fechaLimite ?? goal.deadline ?? null,
+        status: String(goal.estado ?? goal.status ?? 'EN_PROGRESO').toUpperCase() === 'COMPLETADO' || String(goal.estado ?? goal.status ?? 'EN_PROGRESO').toUpperCase() === 'COMPLETED'
+          ? 'completed'
+          : 'in-progress',
+        createdAt: goal.createdAt ?? new Date().toISOString(),
+      }))
 
-const loadGoals = async () => {
-
-  try {
-
-    const data = await getSavingGoals()
-
-    setSavingsGoals(data)
-
-  } catch (error) {
-
-    console.error(error)
-
+      setSavingsGoals(mapped)
+    } catch (error) {
+      console.error(error)
+    }
   }
-}
   const [contributionAmounts, setContributionAmounts] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -59,7 +64,7 @@ const handleContribution = async (goal: any) => {
 
   const amountStr = contributionAmounts[goal.id] || ''
 
-  const amount = parseFloat(amountStr)
+  const amount = Number.parseFloat(amountStr)
 
   if (goal.status === 'completed') {
 
@@ -71,7 +76,7 @@ const handleContribution = async (goal: any) => {
     return
   }
 
-  if (isNaN(amount) || amount <= 0) {
+  if (Number.isNaN(amount) || amount <= 0) {
 
     setErrors(prev => ({
       ...prev,
@@ -86,8 +91,10 @@ const handleContribution = async (goal: any) => {
     const newAmount = goal.currentAmount + amount
 
     await updateSavingGoal(goal.id, {
-      ...goal,
-      currentAmount: newAmount
+      nombre: goal.name,
+      montoObjetivo: goal.targetAmount,
+      fechaLimite: goal.deadline,
+      montoActual: newAmount,
     })
 
     await loadGoals()
@@ -140,8 +147,7 @@ return (
 
         const progress = getProgress(goal)
 
-        const isCompleted =
-          goal.montoActual >= goal.montoObjetivo
+        const isCompleted = goal.status === 'completed'
 
         return (
 
@@ -167,7 +173,7 @@ return (
                   )}
 
                   <CardTitle className="text-lg">
-                    {goal.nombre}
+                    {goal.name}
                   </CardTitle>
 
                 </div>
@@ -186,7 +192,7 @@ return (
 
               </div>
 
-              {goal.fechaLimite && (
+              {goal.deadline && (
 
                 <CardDescription className="flex items-center gap-1 mt-1">
 
@@ -194,7 +200,7 @@ return (
 
                   Fecha limite:
                   {' '}
-                  {formatDate(goal.fechaLimite)}
+                  {formatDate(goal.deadline)}
 
                 </CardDescription>
 
@@ -226,11 +232,11 @@ return (
                 <div className="flex justify-between text-sm">
 
                   <span>
-                    {formatCurrency(goal.montoActual)}
+                    {formatCurrency(goal.currentAmount)}
                   </span>
 
                   <span className="text-muted-foreground">
-                    de {formatCurrency(goal.montoObjetivo)}
+                    de {formatCurrency(goal.targetAmount)}
                   </span>
 
                 </div>

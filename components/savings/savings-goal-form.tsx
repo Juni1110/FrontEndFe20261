@@ -28,9 +28,9 @@ export function SavingsGoalForm() {
     return
   }
 
-  const amount = parseFloat(targetAmount)
+  const amount = Number.parseFloat(targetAmount)
 
-  if (isNaN(amount) || amount <= 0) {
+  if (Number.isNaN(amount) || amount <= 0) {
     setError('El monto objetivo debe ser mayor a cero')
     return
   }
@@ -55,7 +55,6 @@ export function SavingsGoalForm() {
       nombre: name.trim(),
       montoObjetivo: amount,
       fechaLimite: deadline || null,
-      montoActual: 0
     }
 
     await createSavingGoal(payload)

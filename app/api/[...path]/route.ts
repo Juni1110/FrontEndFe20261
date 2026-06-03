@@ -45,7 +45,7 @@ async function proxy(request: NextRequest) {
     ? undefined
     : await request.text()
 
-  const body = normalizeCategoryPayload(path, rawBody, request.method)
+  const body = normalizePayload(path, rawBody, request.method)
 
   const response = await fetch(targetUrl, {
     method: request.method,
@@ -66,11 +66,14 @@ async function proxy(request: NextRequest) {
 function buildTargetUrl(baseUrl: string, path: string, searchParams: URLSearchParams) {
   const normalized = new URLSearchParams(searchParams)
 
-  if ((path.startsWith('transactions') || path.startsWith('reports')) && !normalized.has('titularId')) {
+  const needsTitularId = path.startsWith('transactions') || path.startsWith('reports')
+  const needsSavingGoalsTitularId = path.startsWith('saving-goals')
+
+  if ((needsTitularId || needsSavingGoalsTitularId) && !normalized.has('titularId')) {
     normalized.set('titularId', GENERIC_TITULAR_ID)
   }
 
-  if ((path.startsWith('transactions') || path.startsWith('reports')) && !normalized.has('titular_id')) {
+  if (needsTitularId && !normalized.has('titular_id')) {
     normalized.set('titular_id', GENERIC_TITULAR_ID)
   }
 
@@ -80,12 +83,15 @@ function buildTargetUrl(baseUrl: string, path: string, searchParams: URLSearchPa
   return baseUrl + '/api/' + path + suffix
 }
 
-function normalizeCategoryPayload(path: string, rawBody: string | undefined, method: string) {
+function normalizePayload(path: string, rawBody: string | undefined, method: string) {
   if (!rawBody || !['POST', 'PUT', 'PATCH'].includes(method)) {
     return rawBody
   }
 
-  if (!path.startsWith('categories')) {
+  const needsCategoryTitularId = path.startsWith('categories')
+  const needsSavingGoalsTitularId = path.startsWith('saving-goals')
+
+  if (!needsCategoryTitularId && !needsSavingGoalsTitularId) {
     return rawBody
   }
 
@@ -94,14 +100,16 @@ function normalizeCategoryPayload(path: string, rawBody: string | undefined, met
 
     if (parsed && typeof parsed === 'object') {
       const hasTitularId = typeof parsed.titularId === 'string' && parsed.titularId.trim().length > 0
-      const hasTitularIdSnake = typeof parsed.titular_id === 'string' && parsed.titular_id.trim().length > 0
 
       if (!hasTitularId) {
         parsed.titularId = GENERIC_TITULAR_ID
       }
 
-      if (!hasTitularIdSnake) {
-        parsed.titular_id = GENERIC_TITULAR_ID
+      if (needsCategoryTitularId) {
+        const hasTitularIdSnake = typeof parsed.titular_id === 'string' && parsed.titular_id.trim().length > 0
+        if (!hasTitularIdSnake) {
+          parsed.titular_id = GENERIC_TITULAR_ID
+        }
       }
 
       return JSON.stringify(parsed)
