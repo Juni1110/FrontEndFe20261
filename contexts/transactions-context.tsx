@@ -1,6 +1,7 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from 'react'
+import { useAuth } from './auth-context'
 import type { Transaction, SavingsGoal, GoalContribution, Budget } from '@/types'
 
 interface TransactionsContextType {
@@ -36,11 +37,42 @@ interface TransactionsContextType {
 
 const TransactionsContext = createContext<TransactionsContextType | undefined>(undefined)
 
-export function TransactionsProvider({ children }: { children: ReactNode }) {
+const TRANSACTIONS_STORAGE_KEY = 'finanzas-transactions'
+const SAVINGS_STORAGE_KEY = 'finanzas-savings-goals'
+const CONTRIBUTIONS_STORAGE_KEY = 'finanzas-goal-contributions'
+const BUDGETS_STORAGE_KEY = 'finanzas-budgets'
+
+export function TransactionsProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const { user } = useAuth()
+  const userId = user?.id ?? 'guest'
+
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([])
   const [contributions, setContributions] = useState<GoalContribution[]>([])
   const [budgets, setBudgets] = useState<Budget[]>([])
+
+  const loadStoredData = useCallback(() => {
+    try {
+      const storedTransactions = JSON.parse(localStorage.getItem(`${TRANSACTIONS_STORAGE_KEY}-${userId}`) || '[]') as Transaction[]
+      const storedGoals = JSON.parse(localStorage.getItem(`${SAVINGS_STORAGE_KEY}-${userId}`) || '[]') as SavingsGoal[]
+      const storedContributions = JSON.parse(localStorage.getItem(`${CONTRIBUTIONS_STORAGE_KEY}-${userId}`) || '[]') as GoalContribution[]
+      const storedBudgets = JSON.parse(localStorage.getItem(`${BUDGETS_STORAGE_KEY}-${userId}`) || '[]') as Budget[]
+
+      setTransactions(storedTransactions)
+      setSavingsGoals(storedGoals)
+      setContributions(storedContributions)
+      setBudgets(storedBudgets)
+    } catch {
+      setTransactions([])
+      setSavingsGoals([])
+      setContributions([])
+      setBudgets([])
+    }
+  }, [userId])
+
+  useEffect(() => {
+    loadStoredData()
+  }, [loadStoredData])
 
   // Transaction functions
   const addTransaction = useCallback((transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
@@ -48,19 +80,31 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       ...transaction,
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
+      userId,
     }
-    setTransactions(prev => [newTransaction, ...prev])
-  }, [])
+
+    setTransactions(prev => {
+      const next = [newTransaction, ...prev]
+      localStorage.setItem(`${TRANSACTIONS_STORAGE_KEY}-${userId}`, JSON.stringify(next))
+      return next
+    })
+  }, [userId])
 
   const updateTransaction = useCallback((id: string, updates: Partial<Omit<Transaction, 'id' | 'createdAt'>>) => {
-    setTransactions(prev =>
-      prev.map(t => (t.id === id ? { ...t, ...updates } : t))
-    )
-  }, [])
+    setTransactions(prev => {
+      const next = prev.map(t => (t.id === id ? { ...t, ...updates, userId: t.userId ?? userId } : t))
+      localStorage.setItem(`${TRANSACTIONS_STORAGE_KEY}-${userId}`, JSON.stringify(next))
+      return next
+    })
+  }, [userId])
 
   const deleteTransaction = useCallback((id: string) => {
-    setTransactions(prev => prev.filter(t => t.id !== id))
-  }, [])
+    setTransactions(prev => {
+      const next = prev.filter(t => t.id !== id)
+      localStorage.setItem(`${TRANSACTIONS_STORAGE_KEY}-${userId}`, JSON.stringify(next))
+      return next
+    })
+  }, [userId])
 
   // Savings Goals functions
   const addSavingsGoal = useCallback((goal: Omit<SavingsGoal, 'id' | 'currentAmount' | 'status' | 'createdAt'>) => {
@@ -71,8 +115,12 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       status: 'in-progress',
       createdAt: new Date().toISOString(),
     }
-    setSavingsGoals(prev => [newGoal, ...prev])
-  }, [])
+    setSavingsGoals(prev => {
+      const next = [newGoal, ...prev]
+      localStorage.setItem(`${SAVINGS_STORAGE_KEY}-${userId}`, JSON.stringify(next))
+      return next
+    })
+  }, [userId])
 
   const addContribution = useCallback((goalId: string, amount: number) => {
     const newContribution: GoalContribution = {
@@ -81,10 +129,14 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       amount,
       date: new Date().toISOString(),
     }
-    setContributions(prev => [newContribution, ...prev])
+    setContributions(prev => {
+      const next = [newContribution, ...prev]
+      localStorage.setItem(`${CONTRIBUTIONS_STORAGE_KEY}-${userId}`, JSON.stringify(next))
+      return next
+    })
 
-    setSavingsGoals(prev =>
-      prev.map(goal => {
+    setSavingsGoals(prev => {
+      const next = prev.map(goal => {
         if (goal.id === goalId) {
           const newAmount = goal.currentAmount + amount
           return {
@@ -95,8 +147,10 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         }
         return goal
       })
-    )
-  }, [])
+      localStorage.setItem(`${SAVINGS_STORAGE_KEY}-${userId}`, JSON.stringify(next))
+      return next
+    })
+  }, [userId])
 
   // Budget functions
   const addBudget = useCallback((budget: Omit<Budget, 'id' | 'createdAt'>) => {
@@ -105,8 +159,12 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
     }
-    setBudgets(prev => [newBudget, ...prev])
-  }, [])
+    setBudgets(prev => {
+      const next = [newBudget, ...prev]
+      localStorage.setItem(`${BUDGETS_STORAGE_KEY}-${userId}`, JSON.stringify(next))
+      return next
+    })
+  }, [userId])
 
   const getBudgetSpent = useCallback((budget: Budget) => {
     return transactions
@@ -170,27 +228,29 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     return today >= start && today <= end
   }) || null
 
+  const value = useMemo(() => ({
+    transactions,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    totalIncome,
+    totalExpenses,
+    balance,
+    getMonthlyData,
+    savingsGoals,
+    contributions,
+    addSavingsGoal,
+    addContribution,
+    totalContributions,
+    budgets,
+    activeBudget,
+    addBudget,
+    getBudgetSpent,
+  }), [transactions, addTransaction, updateTransaction, deleteTransaction, totalIncome, totalExpenses, balance, getMonthlyData, savingsGoals, contributions, addSavingsGoal, addContribution, totalContributions, budgets, activeBudget, addBudget, getBudgetSpent])
+
   return (
     <TransactionsContext.Provider
-      value={{
-        transactions,
-        addTransaction,
-        updateTransaction,
-        deleteTransaction,
-        totalIncome,
-        totalExpenses,
-        balance,
-        getMonthlyData,
-        savingsGoals,
-        contributions,
-        addSavingsGoal,
-        addContribution,
-        totalContributions,
-        budgets,
-        activeBudget,
-        addBudget,
-        getBudgetSpent,
-      }}
+      value={value}
     >
       {children}
     </TransactionsContext.Provider>

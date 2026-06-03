@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type SyntheticEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,13 +29,9 @@ import {
   type Transaction,
 } from '@/types'
 
-import { createCategory, getCategories } from '@/lib/api/categories'
-import { GENERIC_TITULAR_ID } from '@/lib/api/constants'
-
-import {
-  createTransaction as createTransactionApi,
-  updateTransaction as updateTransactionApi
-} from '@/lib/api/transactions'
+import { getCategories } from '@/lib/api/categories'
+import { useAuth } from '@/contexts/auth-context'
+import { useTransactions } from '@/contexts/transactions-context'
 
 interface TransactionFormProps {
   editTransaction?: Transaction
@@ -47,7 +43,9 @@ export function TransactionForm({
   editTransaction,
   onCancel,
   onSuccess
-}: TransactionFormProps) {
+}: Readonly<TransactionFormProps>) {
+  const { user } = useAuth()
+  const { addTransaction, updateTransaction } = useTransactions()
 
   const [type, setType] = useState<'income' | 'expense'>(
     editTransaction?.type || 'income'
@@ -136,7 +134,7 @@ export function TransactionForm({
   }
 
   const handleSubmit = async (
-    e: React.FormEvent
+    e: SyntheticEvent<HTMLFormElement>
   ) => {
 
     e.preventDefault()
@@ -144,9 +142,9 @@ export function TransactionForm({
     setError('')
     setSuccess(false)
 
-    const amountNumber = parseFloat(amount)
+    const amountNumber = Number.parseFloat(amount)
 
-    if (isNaN(amountNumber) || amountNumber <= 0) {
+    if (Number.isNaN(amountNumber) || amountNumber <= 0) {
 
       setError(
         'Por favor ingresa un monto valido mayor a cero'
@@ -188,67 +186,23 @@ export function TransactionForm({
 
     try {
 
-      try {
+      const transactionType: 'income' | 'expense' = type === 'income' ? 'income' : 'expense'
 
-        await createCategory(
-          category,
-          GENERIC_TITULAR_ID
-        )
-
-      } catch (categoryError) {
-
-        const categoryMessage = categoryError instanceof Error
-          ? categoryError.message
-          : ''
-
-        const isDuplicateCategory = /ya existe|already exists|409/i.test(categoryMessage)
-
-        if (!isDuplicateCategory) {
-
-          console.warn('No se pudo asegurar la categoría antes de guardar la transacción, continuando con el guardado.', categoryError)
-
-        }
-
+      const payload: Omit<Transaction, 'id' | 'createdAt'> = {
+        amount: amountNumber,
+        type: transactionType,
+        category,
+        description: description.trim(),
+        date,
+        owner: user?.name || user?.email || 'Usuario',
+        userId: user?.id || 'guest',
       }
-
-      const payload = {
-
-        nombre: description.trim(),
-
-        descripcion: description.trim(),
-
-        monto: amountNumber,
-
-        tipo:
-          type === 'income'
-            ? 'INGRESO'
-            : 'GASTO',
-
-        fecha: date,
-
-        titularId: GENERIC_TITULAR_ID,
-        titular_id: GENERIC_TITULAR_ID,
-
-        nombreCategoria: category,
-
-      }
-
-      console.log(payload)
 
       if (isEditing && editTransaction) {
-
-        await updateTransactionApi(
-          editTransaction.id,
-          payload
-        )
-
+        updateTransaction(editTransaction.id, payload)
         onSuccess?.()
-
       } else {
-
-        await createTransactionApi(
-          payload
-        )
+        addTransaction(payload)
 
         setSuccess(true)
 
@@ -265,9 +219,7 @@ export function TransactionForm({
         )
 
         setTimeout(() => {
-
           setSuccess(false)
-
         }, 3000)
 
         onSuccess?.()
