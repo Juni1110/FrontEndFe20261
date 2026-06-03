@@ -21,10 +21,12 @@ export interface Transaction {
   id: string
   amount: number
   type: 'income' | 'expense'
-  category: TransactionCategory
+  category: string
   description: string
   date: string
-  createdAt: string
+  createdAt?: string
+  title?: string
+  owner?: string
 }
 
 export interface SavingsGoal {

@@ -25,7 +25,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Empty } from '@/components/ui/empty'
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty'
 import { TrendingUp, TrendingDown, Pencil, Trash2, Receipt, AlertTriangle } from 'lucide-react'
 import { getCategoryLabel, type Transaction } from '@/types'
 
@@ -50,30 +56,7 @@ const loadTransactions = async () => {
 
     const data = await getTransactions()
 
-    const mappedTransactions = data.map((t: any) => ({
-
-      id: t.transactionId,
-
-      amount: t.monto,
-
-type:
-  t.tipo === 'INGRESO'
-    ? 'income'
-    : 'expense',
-
-      category:
-        t.nombreCategoria || 'Sin categoria',
-
-      description:
-        t.descripcion || '',
-
-      date: t.fecha,
-
-      title: t.nombre,
-
-    }))
-
-    setTransactions(mappedTransactions)
+    setTransactions(data as Transaction[])
 
   } catch (error) {
 
@@ -113,11 +96,17 @@ const formatDate = (dateString: string) => {
     return (
       <Card>
         <CardContent className="py-12">
-          <Empty
-            icon={Receipt}
-            title="Sin transacciones"
-            description="Aun no has registrado ninguna transaccion. Comienza agregando un ingreso o gasto."
-          />
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Receipt className="size-6" />
+              </EmptyMedia>
+              <EmptyTitle>Sin transacciones</EmptyTitle>
+              <EmptyDescription>
+                Aun no has registrado ninguna transaccion. Comienza agregando un ingreso o gasto.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         </CardContent>
       </Card>
     )
@@ -207,7 +196,7 @@ const formatDate = (dateString: string) => {
                   </TableCell>
                   <TableCell>
                     <span className="px-2 py-1 rounded-md bg-muted text-sm">
-                      {getCategoryLabel(transaction.category)}
+                      {getCategoryLabel(transaction.category as never)}
                     </span>
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate">
@@ -290,7 +279,7 @@ const formatDate = (dateString: string) => {
                     {deletingTransaction.type === 'income' ? 'Ingreso' : 'Gasto'}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {getCategoryLabel(deletingTransaction.category)} - {formatDate(deletingTransaction.date)}
+                    {getCategoryLabel(deletingTransaction.category as never)} - {formatDate(deletingTransaction.date)}
                   </p>
                 </div>
                 <p className={`text-lg font-bold ${
