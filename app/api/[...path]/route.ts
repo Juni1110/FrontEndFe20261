@@ -27,7 +27,7 @@ export async function DELETE(request: NextRequest) {
 async function proxy(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const path = requestUrl.pathname.replace(/^\/api\//, '')
-  const targetUrl = `${BACKEND_API_BASE_URL}/api/${path}${requestUrl.search}`
+  const targetUrl = buildTargetUrl(BACKEND_API_BASE_URL, path, requestUrl.searchParams)
 
   const headers = new Headers()
   const accept = request.headers.get('accept')
@@ -61,6 +61,23 @@ async function proxy(request: NextRequest) {
     status: response.status,
     headers: responseHeaders,
   })
+}
+
+function buildTargetUrl(baseUrl: string, path: string, searchParams: URLSearchParams) {
+  const normalized = new URLSearchParams(searchParams)
+
+  if ((path.startsWith('transactions') || path.startsWith('reports')) && !normalized.has('titularId')) {
+    normalized.set('titularId', GENERIC_TITULAR_ID)
+  }
+
+  if ((path.startsWith('transactions') || path.startsWith('reports')) && !normalized.has('titular_id')) {
+    normalized.set('titular_id', GENERIC_TITULAR_ID)
+  }
+
+  const queryString = normalized.toString()
+  const suffix = queryString ? '?' + queryString : ''
+
+  return baseUrl + '/api/' + path + suffix
 }
 
 function normalizeCategoryPayload(path: string, rawBody: string | undefined, method: string) {
