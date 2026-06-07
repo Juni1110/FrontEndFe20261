@@ -39,6 +39,8 @@ export function TransactionsTable() {
 const [transactions, setTransactions] = useState<Transaction[]>([])
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-MX', {
@@ -260,7 +262,15 @@ const formatDate = (dateString: string) => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!deletingTransaction} onOpenChange={(open) => !open && setDeletingTransaction(null)}>
+      <Dialog
+        open={!!deletingTransaction}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingTransaction(null)
+            setDeleteError(null)
+          }
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -290,30 +300,35 @@ const formatDate = (dateString: string) => {
               </div>
             </div>
           )}
+          {deleteError && (
+            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+              <AlertTriangle className="size-4 shrink-0" />
+              <span>{deleteError}</span>
+            </div>
+          )}
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDeletingTransaction(null)}>
+            <Button variant="outline" onClick={() => { setDeletingTransaction(null); setDeleteError(null) }}>
               Cancelar
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
+              disabled={isDeleting}
               onClick={async () => {
-                  if (deletingTransaction) {
-
-                    try {
-
-                      await deleteTransactionApi(deletingTransaction.id)
-
-                      await loadTransactions()
-
-                      setDeletingTransaction(null)
-
-                    } catch (error) {
-                      console.error(error)
-                    }
-                  }
-                }}
+                if (!deletingTransaction) return
+                setIsDeleting(true)
+                setDeleteError(null)
+                try {
+                  await deleteTransactionApi(deletingTransaction.id)
+                  await loadTransactions()
+                  setDeletingTransaction(null)
+                } catch (error) {
+                  setDeleteError(error instanceof Error ? error.message : 'Error al eliminar la transaccion')
+                } finally {
+                  setIsDeleting(false)
+                }
+              }}
             >
-              Eliminar
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
             </Button>
           </DialogFooter>
         </DialogContent>

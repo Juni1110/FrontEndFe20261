@@ -14,18 +14,22 @@ import {
   updateSavingGoal
 } from '@/lib/api/saving-goals'
 
-export function SavingsGoalsList() {
+export function SavingsGoalsList({ refreshKey = 0 }: { refreshKey?: number } = {}) {
   const [savingsGoals, setSavingsGoals] = useState<any[]>([])
 
   useEffect(() => {
     loadGoals()
-  }, [])
+  }, [refreshKey])
 
   const loadGoals = async () => {
     try {
       const data = await getSavingGoals()
 
-      const mapped = (Array.isArray(data) ? data : []).map((goal: any) => ({
+      const items: any[] = Array.isArray(data)
+        ? data
+        : (data?._embedded?.savingGoalResponseList ?? [])
+
+      const mapped = items.map((goal: any) => ({
         id: goal.goalId ?? goal.id,
         name: goal.nombre ?? goal.name ?? 'Meta de ahorro',
         targetAmount: Number(goal.montoObjetivo ?? goal.targetAmount ?? 0),
@@ -94,7 +98,7 @@ const handleContribution = async (goal: any) => {
       nombre: goal.name,
       montoObjetivo: goal.targetAmount,
       fechaLimite: goal.deadline,
-      montoActual: newAmount,
+      avance: Math.round(newAmount),
     })
 
     await loadGoals()

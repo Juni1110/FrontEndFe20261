@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { generateReport } from '@/lib/api/reports'
 import { GENERIC_TITULAR_ID } from '@/lib/api/constants'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -50,22 +50,22 @@ const loadReport = async () => {
     const data = await generateReport(payload)
 
     setMonthData({
-      income: data.ingresos || 0,
-      expenses: data.gastos || 0,
-      contributions: data.aportes || 0,
-      balance: data.balance || 0,
+      income: data.ingresosAcumulados ?? data.ingresos ?? 0,
+      expenses: data.gastosAcumulados ?? data.gastos ?? 0,
+      contributions: data.aportesMetaAcumulados ?? data.aportes ?? 0,
+      balance: data.balanceNeto ?? data.balance ?? 0,
       transactions: data.transacciones || [],
     })
 
   } catch (error) {
-
+    setMonthData({ income: 0, expenses: 0, contributions: 0, balance: 0, transactions: [] })
     console.error(error)
-
   }
 }
 
 const hasData =
-  monthData.transactions?.length > 0 ||
+  monthData.income > 0 ||
+  monthData.expenses > 0 ||
   monthData.contributions > 0
 
   const isNegativeBalance = monthData.balance < 0

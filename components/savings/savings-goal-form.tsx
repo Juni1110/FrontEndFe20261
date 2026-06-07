@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Check, Target } from 'lucide-react'
 
-export function SavingsGoalForm() {
+export function SavingsGoalForm({ onGoalCreated }: { onGoalCreated?: () => void } = {}) {
 
   const [name, setName] = useState('')
   const [targetAmount, setTargetAmount] = useState('')
@@ -60,6 +60,7 @@ export function SavingsGoalForm() {
     await createSavingGoal(payload)
 
     setSuccess(true)
+    onGoalCreated?.()
 
     setName('')
     setTargetAmount('')

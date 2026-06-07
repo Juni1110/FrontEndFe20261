@@ -41,11 +41,17 @@ async function proxy(request: NextRequest) {
   const backendOrigin = new URL(BACKEND_API_BASE_URL).origin
   headers.set('origin', backendOrigin)
 
-  const rawBody = ['GET', 'HEAD'].includes(request.method)
+  const noBodyMethods = ['GET', 'HEAD', 'DELETE']
+  const rawBody = noBodyMethods.includes(request.method)
     ? undefined
     : await request.text()
 
   const body = normalizePayload(path, rawBody, request.method)
+
+  // DELETE/GET/HEAD must not send a body — drop Content-Type to keep the request clean
+  if (noBodyMethods.includes(request.method)) {
+    headers.delete('content-type')
+  }
 
   const response = await fetch(targetUrl, {
     method: request.method,
@@ -66,8 +72,11 @@ async function proxy(request: NextRequest) {
 function buildTargetUrl(baseUrl: string, path: string, searchParams: URLSearchParams) {
   const normalized = new URLSearchParams(searchParams)
 
-  const needsTitularId = path.startsWith('transactions') || path.startsWith('reports')
-  const needsSavingGoalsTitularId = path.startsWith('saving-goals')
+  // Backend uses /api/v1/... — add the v1 prefix when it's missing
+  const versionedPath = path.startsWith('v1/') ? path : `v1/${path}`
+
+  const needsTitularId = versionedPath.startsWith('v1/transactions') || versionedPath.startsWith('v1/reports')
+  const needsSavingGoalsTitularId = versionedPath.startsWith('v1/saving-goals')
 
   if ((needsTitularId || needsSavingGoalsTitularId) && !normalized.has('titularId')) {
     normalized.set('titularId', GENERIC_TITULAR_ID)
@@ -80,7 +89,7 @@ function buildTargetUrl(baseUrl: string, path: string, searchParams: URLSearchPa
   const queryString = normalized.toString()
   const suffix = queryString ? '?' + queryString : ''
 
-  return baseUrl + '/api/' + path + suffix
+  return baseUrl + '/api/' + versionedPath + suffix
 }
 
 function normalizePayload(path: string, rawBody: string | undefined, method: string) {
@@ -88,8 +97,9 @@ function normalizePayload(path: string, rawBody: string | undefined, method: str
     return rawBody
   }
 
-  const needsCategoryTitularId = path.startsWith('categories')
-  const needsSavingGoalsTitularId = path.startsWith('saving-goals')
+  const versionedPath = path.startsWith('v1/') ? path : `v1/${path}`
+  const needsCategoryTitularId = versionedPath.startsWith('v1/categories')
+  const needsSavingGoalsTitularId = versionedPath.startsWith('v1/saving-goals')
 
   if (!needsCategoryTitularId && !needsSavingGoalsTitularId) {
     return rawBody
